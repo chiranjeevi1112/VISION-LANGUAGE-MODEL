@@ -5,6 +5,40 @@ import torch
 
 IMAGENET_STANDORD_MEAN = [0.5,0.5,0.5]
 IMAGENET_STANDORD_STD = [0.5,0.5,0.5]
+
+def add_image_tokens_to_prompt(prefix_prompt,bos_token,image_seq_len,image_token):
+    #https://huggingface.co/blog/paligemma#detailed-inference-process
+    return f"{image_token *image_seq_len}{bos_token}{prefix_prompt}\n"
+
+
+
+def resize(image:Image,
+           size:Tuple[int,int],
+           resample:Image.Resampling =None,
+           reducing_gap:Optional[int]=None)->np.array:
+    height,width = size
+    resized_image =image.resize(
+        (width,height),resample=resample,reducing_gap = reducing_gap
+    )
+    return resized_image
+
+def rescale(image:np.ndarray,
+            scale:float,
+            dtype:np.dtype=np.float32)->np.array:
+    rescaled_image = image*scale
+    rescaled_image = rescaled_image.astype(dtype)
+    return rescaled_image     
+def normalize(
+        image:np.ndarray,
+        mean:Union[float,Iterable[float]],
+        std:Union[float,Iterable[float]],
+)->np.ndarray:
+    mean = np.array(mean,dtype=image.dtype)
+    std = np.array(std,dtype=image.dtype)
+    image = (image-mean)/std
+    return image
+    
+
 def process_images(
         images:List[Image.Image],
         size:Dict[str,int] =None,
@@ -20,10 +54,15 @@ def process_images(
 
     images = [np.array(image) for image in images
               ]
+    images = [rescale(image,scale=rescale_factor)for image in images]
+    images = [normalize(image,mean = image_mean,std=image_std)for image in images]
+
+    images = [image.transpose(2,0,1)for image in images]
+    return images
 
 class PaliGemmaProcessor:
     IMAGE_TOKEN = "<IMAGE>"
-    def __init__(self,tokenizer,num_image_tokens:int,image_size:int)
+    def __init__(self,tokenizer,num_image_tokens:int,image_size:int):
         super().__init__()
 
         self.image_seq_length = num_image_tokens
@@ -78,3 +117,14 @@ class PaliGemmaProcessor:
             )
             for prompt in text 
         ]
+        # Return the input_ids and attention_mask as pytorch tensors
+        #OGES GHAMBEER ->[1,2,3] 1 corresponds to the OGES and the 2 corresponds to space and the Ghambeera is 3 these are ids ->[[...],[....],[....]]
+        inputs = self.tokenizer(
+            input_strings,
+            return_tensors ="pt",
+            truncation=truncation,
+        )
+
+        return_data = {"pixel_values":pixel_values, **inputs}
+        return return_data
+    
