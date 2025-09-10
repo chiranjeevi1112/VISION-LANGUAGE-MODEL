@@ -46,7 +46,7 @@ def process_images(
         rescale_factor:float= None,
         image_mean: Optional[Union[float, List[float]]] = None,
         image_std: Optional[Union[float,List[float]]] = None
-)->List[np.narray]:
+)->List[np.ndarray]:
     height,width = size[0],size[1]
     images = [
         resize(image=image,size=(height,width),resample = resample) for image in images
@@ -100,8 +100,8 @@ class PaliGemmaProcessor:
             images,
             size=(self.image_size,self.image_size),
             resample = Image.Resampling.BICUBIC,
-            rescale_factor  =1/255.0
-            image_mean = IMAGENET_STANDORD_MEAN
+            rescale_factor  = 1/255.0,
+            image_mean = IMAGENET_STANDORD_MEAN,
             image_std = IMAGENET_STANDORD_STD,  
         )    
 

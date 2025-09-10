@@ -178,7 +178,7 @@ class SiglipEncoderLayer(nn.Module):
               return hidden_states
          
 
-class SiglipEncoder(nn.Modules):
+class SiglipEncoder(nn.Module):
        def __init__(self,config:SingleVisionConfig):
               super().__init__()
               self.config = config
