@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MODEL_PATH="paligemma-3b-pt-224"
+MODEL_PATH="google/paligemma-3b-pt-224"
 PROMPT="this building is "
 IMAGE_FILE_PATH="test_images/vsdvsdavegvwrgb.jpg"
 MAX_TOKENS_TO_GENERATE="100"

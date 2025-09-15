@@ -3,7 +3,7 @@ from torch import nn
 from typing import Optional,Tuple,List
 from torch.nn import CrossEntropyLoss
 import math
-from modeling_siglip import SingleVisionConfig,SiglipVisionModel
+from modeling_siglip import SiglipVisionConfig,SiglipVisionModel
 
 
 class KVCache():
@@ -78,7 +78,8 @@ class PaliGemmaConfig():
         self.is_encoder_decoder = False
         self.pad_token_id= pad_token_id
 
-        self.vision_config =SiglipVisionModel(**vision_config)
+        self.vision_config =SiglipVisionConfig(**vision_config)
+
         self.text_config = text_config
 
         self.text_config =GemmaConfig(**text_config,pad_token_id=pad_token_id)
@@ -97,7 +98,7 @@ class GemmaRMSNorm(nn.Module):
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
     def forward(self, x):
-        output = self._norm(x.float())
+
         # Llama does x.to(float16) * w whilst Gemma is (x * w).to(float16)
         # See https://github.com/huggingface/transformers/pull/29402
         output = output * (1.0 + self.weight.float())
@@ -360,9 +361,9 @@ class GemmaModel(nn.Module):
     def __init__(self,config:GemmaConfig):
         super().__init__()
         self.config = config
-        self.padding_ids=config.pad_token_uid
-        self.cvocab_size=config.vocab_Size
-        self.embed_tkens=nn.Embeddinfg(config.vocab_Size,config.hifdeen_szie,self.padding_ids)
+        self.padding_ids=config.pad_token_id
+        self.vocab_size=config.vocab_size
+        self.embed_tkens=nn.Embedding(config.vocab_size,config.hidden_size,self.padding_ids)
         self.layers =nn.ModuleList(
             [GemmaDecoderLayer(config,layer_idx)for layer_idx in range(config.num_hidden_layers)]
 
@@ -410,7 +411,7 @@ class GemmaForCausalLM(nn.Module):
     def __init__(self,config):
         super().__init__()
         self.config= config
-        self.model =GemmaConfig(config)
+        self.model =GemmaModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size,config.vocab_size,bias=False)
 

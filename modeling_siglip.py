@@ -12,7 +12,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print("device",device)
 
 
-class SingleVisionConfig:
+class SiglipVisionConfig:
     def __init__(self,
                  hidden_size = 768,
                  intermediate_size = 3072,
@@ -27,6 +27,7 @@ class SingleVisionConfig:
                  **kwargs):
 
                 super().__init__()
+
                 self.hidden_size = hidden_size
                 self.intermediate_size = intermediate_size
                 self.num_hidden_layers = num_hidden_layers
@@ -39,8 +40,8 @@ class SingleVisionConfig:
                 self.num_imahe_tokens = num_image_tokens
 
 class SiglipVisionEmbeddings(nn.Module):
-       def __init__(self,config:SingleVisionConfig):
-              super().__init_()
+       def __init__(self,config:SiglipVisionConfig):
+              super().__init__()
               self.config = config
               self.embed_dim = config.hidden_size
               self.image_size = config.image_size
@@ -48,7 +49,7 @@ class SiglipVisionEmbeddings(nn.Module):
 
               self.patch_embedding = nn.Conv2d(
                      in_channels = config.num_channels,
-                     out_channels = config.embed_dim,
+                     out_channels = self.embed_dim,
                      kernel_size = self.patch_size,
                      stride = self.patch_size,
                      padding = "valid", #No padding is added
@@ -150,11 +151,11 @@ class SiglipAttention(nn.Module):
 
 
 class SiglipEncoderLayer(nn.Module):
-       def __init__(self,config:SingleVisionConfig):
-              super().init__()
+       def __init__(self,config:SiglipVisionConfig):
+              super().__init__()
               self.embed_dim = config.hidden_size
               self.self_attn = SiglipAttention(config)
-              self.layer_norm1 = nn.LayerNorm(self.embed_dim,eps = config.layer_more_eps)
+              self.layer_norm1 = nn.LayerNorm(self.embed_dim,eps = config.layer_norm_eps)
               self.mlp = SiglipMLP(config)
               self.layer_norm2 = nn.LayerNorm(self.embed_dim,eps=config.layer_norm_eps)
 
@@ -179,7 +180,7 @@ class SiglipEncoderLayer(nn.Module):
          
 
 class SiglipEncoder(nn.Module):
-       def __init__(self,config:SingleVisionConfig):
+       def __init__(self,config:SiglipVisionConfig):
               super().__init__()
               self.config = config
               self.layers = nn.ModuleList(
@@ -199,7 +200,7 @@ class SiglipEncoder(nn.Module):
        
 
 class siglipVisionTransformer(nn.Module):
-       def __init__(self,config:SingleVisionConfig):
+       def __init__(self,config:SiglipVisionConfig):
               super().__init__()
               self.config = config
               embad_dim = config.hidden_size
@@ -211,17 +212,17 @@ class siglipVisionTransformer(nn.Module):
        def forward(self,pixel_values:torch.Tensor)->torch.tensor:
               hidden_states = self.embeddings(pixel_values)
               last_hidden_state = self.encoder(inputs_embed=hidden_states)
-              last_hidden_state = self.post_layernorm(layer_hidden_State)
+              last_hidden_state = self.post_layernorm(last_hidden_state)
 
               return last_hidden_state
 
 
 class SiglipVisionModel(nn.Module):
         
-        def __init__(self,config:SingleVisionConfig):
+        def __init__(self,config:SiglipVisionConfig):
             super().__init__()
             self.config = config
-            self.vision_model = SiglipVisionModel(config)
+            self.vision_model = siglipVisionTransformer(config)
          
         def forward(self,pixel_values)->Tuple:
                
